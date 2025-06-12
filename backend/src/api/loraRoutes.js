@@ -17,11 +17,24 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // Use multer middleware for the /train route
-router.post("/train", upload.array("images"), loraController.startLoraTraining);
-router.get("/status/:trainingJobId", loraController.getLoraTrainingStatus);
+router.post(
+  "/train",
+  upload.array("images"),
+  loraController.validateStartLoraTraining,
+  loraController.startLoraTraining
+);
+router.get(
+  "/status/:trainingJobId",
+  loraController.validateGetLoraTrainingStatus,
+  loraController.getLoraTrainingStatus
+);
 
 // Add routes for managing trained LoRA models
 router.get("/models", loraController.getLoraModels);
-router.delete("/models/:modelId", loraController.deleteLoraModel);
+router.delete(
+  "/models/:modelId",
+  loraController.validateDeleteLoraModel,
+  loraController.deleteLoraModel
+);
 
 module.exports = router;

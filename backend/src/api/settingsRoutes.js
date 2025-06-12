@@ -6,6 +6,10 @@ const settingsController = require("../controllers/settingsController");
 router.get("/api-keys", settingsController.getApiKeys);
 
 // API 키 업데이트 라우트
-router.patch("/api-keys", settingsController.updateApiKeys);
+router.patch(
+  "/api-keys",
+  settingsController.validateUpdateApiKeys,
+  settingsController.updateApiKeys
+);
 
 module.exports = router;

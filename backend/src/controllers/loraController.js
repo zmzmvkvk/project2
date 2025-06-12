@@ -1,6 +1,28 @@
 const loraService = require("../services/loraService");
+const { validationResult, check } = require("express-validator");
+
+// 유효성 검사 미들웨어 정의
+exports.validateStartLoraTraining = [
+  // multer로 파일이 업로드되었는지 여부는 미들웨어에서 직접 확인해야 함
+  // 여기서는 req.body.trainingConfig의 유효성만 검사 (필요에 따라 확장)
+  check("trainingConfig", "훈련 설정은 필수입니다.").notEmpty(),
+];
+
+exports.validateGetLoraTrainingStatus = [
+  check("trainingJobId", "훈련 작업 ID는 필수입니다.").notEmpty(),
+];
+
+exports.validateDeleteLoraModel = [
+  check("modelId", "모델 ID는 필수입니다.").notEmpty(),
+];
 
 exports.startLoraTraining = async (req, res) => {
+  // 유효성 검사 오류 처리
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     // req.files is populated by multer
     const uploadedFiles = req.files;
@@ -29,11 +51,14 @@ exports.startLoraTraining = async (req, res) => {
 };
 
 exports.getLoraTrainingStatus = async (req, res) => {
+  // 유효성 검사 오류 처리
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   try {
     const { trainingJobId } = req.params;
-    if (!trainingJobId) {
-      return res.status(400).json({ message: "Training job ID is required." });
-    }
     const status = await loraService.getLoraTrainingStatus(trainingJobId);
     res.status(200).json(status);
   } catch (error) {
@@ -56,11 +81,13 @@ exports.getLoraModels = async (req, res) => {
 };
 
 exports.deleteLoraModel = async (req, res) => {
+  // 유효성 검사 오류 처리
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { modelId } = req.params;
-    if (!modelId) {
-      return res.status(400).json({ message: "Model ID is required." });
-    }
     await loraService.deleteLoraModel(modelId);
     res.status(200).json({ message: "LoRA model deleted successfully." });
   } catch (error) {
