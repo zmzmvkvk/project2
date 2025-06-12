@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useProject } from "../project/hooks/useProjects";
 import ImageGenerationForm from "../asset/components/ImageGenerationForm";
-import { useImages } from "../asset/hooks/useImages";
+import { useAssetManagement } from "../asset/hooks/useAssetManagement";
 import StoryPromptPanel from "./components/StoryPromptPanel";
 import VideoGenerationPanel from "./components/VideoGenerationPanel";
 import AssetPreviewPanel from "./components/AssetPreviewPanel";
@@ -12,14 +12,21 @@ const ProductionRoom = () => {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
   const { data: project, refetch: refetchProject } = useProject(projectId);
-  const {
-    data: images,
-    isLoading: isImagesLoading,
-    error: imagesError,
-    refetch: refetchImages,
-  } = useImages(projectId);
+
+  const { images, isImagesLoading, imagesError, refetchImages } =
+    useAssetManagement(projectId);
 
   const [activeTab, setActiveTab] = useState("generate");
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState(null);
+  const [exportType, setExportType] = useState("image-sequence"); // 'image-sequence' 또는 'video'
+  const [videoOptions, setVideoOptions] = useState({
+    fps: 30,
+    duration: 3,
+    resolution: "1080p",
+    format: "mp4",
+    audioUrl: "", // 오디오 URL 상태 추가
+  });
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
@@ -45,6 +52,92 @@ const ProductionRoom = () => {
       refetchImages();
     } catch (err) {
       console.error("Failed to save generated content to project:", err);
+    }
+  };
+
+  // 이미지 시퀀스 내보내기
+  const handleExportImageSequence = async () => {
+    if (!images || images.length === 0) {
+      setExportError("내보낼 이미지가 없습니다.");
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const scenes = images.map((image, index) => ({
+        imageUrl: image.url,
+        order: index + 1,
+      }));
+
+      const response = await axios.post("/api/export/image-sequence", {
+        scenes,
+      });
+
+      if (response.data.success) {
+        // 다운로드 링크 생성 및 클릭
+        const downloadUrl = response.data.downloadUrl;
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `${project.name}_image_sequence.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error("이미지 시퀀스 내보내기 실패:", error);
+      setExportError("이미지 시퀀스 내보내기에 실패했습니다.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // 비디오 내보내기
+  const handleExportVideo = async () => {
+    if (!images || images.length === 0) {
+      setExportError("내보낼 이미지가 없습니다.");
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const scenes = images.map((image, index) => ({
+        imageUrl: image.url,
+        order: index + 1,
+      }));
+
+      const response = await axios.post("/api/export/video", {
+        scenes,
+        options: videoOptions,
+      });
+
+      if (response.data.success) {
+        // 다운로드 링크 생성 및 클릭
+        const downloadUrl = response.data.downloadUrl;
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `${project.name}_video.${videoOptions.format}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error("비디오 내보내기 실패:", error);
+      setExportError("비디오 내보내기에 실패했습니다.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // 내보내기 처리
+  const handleExport = () => {
+    if (exportType === "image-sequence") {
+      handleExportImageSequence();
+    } else {
+      handleExportVideo();
     }
   };
 
@@ -79,8 +172,98 @@ const ProductionRoom = () => {
           </button>
           <span>{project.name} 제작실</span>
         </h1>
-        <p className="text-gray-600 max-w-md">{project.description}</p>
+        <div className="flex items-center gap-4">
+          <p className="text-gray-600 max-w-md">{project.description}</p>
+          <div className="flex items-center gap-2">
+            <select
+              value={exportType}
+              onChange={(e) => setExportType(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="image-sequence">이미지 시퀀스</option>
+              <option value="video">비디오</option>
+            </select>
+            {exportType === "video" && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={videoOptions.resolution}
+                  onChange={(e) =>
+                    setVideoOptions((prev) => ({
+                      ...prev,
+                      resolution: e.target.value,
+                    }))
+                  }
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                  <option value="4k">4K</option>
+                </select>
+                <select
+                  value={videoOptions.fps}
+                  onChange={(e) =>
+                    setVideoOptions((prev) => ({
+                      ...prev,
+                      fps: Number(e.target.value),
+                    }))
+                  }
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="24">24 FPS</option>
+                  <option value="30">30 FPS</option>
+                  <option value="60">60 FPS</option>
+                </select>
+                <input
+                  type="number"
+                  value={videoOptions.duration}
+                  onChange={(e) =>
+                    setVideoOptions((prev) => ({
+                      ...prev,
+                      duration: Number(e.target.value),
+                    }))
+                  }
+                  min="1"
+                  max="10"
+                  className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="장면 길이(초)"
+                />
+                <input
+                  type="text"
+                  value={videoOptions.audioUrl}
+                  onChange={(e) =>
+                    setVideoOptions((prev) => ({
+                      ...prev,
+                      audioUrl: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="배경 음악 URL (선택 사항)"
+                />
+              </div>
+            )}
+            <button
+              onClick={handleExport}
+              disabled={isExporting || !images || images.length === 0}
+              className={`px-4 py-2 rounded-md font-semibold text-white transition-colors ${
+                isExporting || !images || images.length === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {isExporting ? "내보내는 중..." : "내보내기"}
+            </button>
+          </div>
+        </div>
       </div>
+
+      {exportError && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+          role="alert"
+        >
+          <span className="block sm:inline">{exportError}</span>
+        </div>
+      )}
 
       {/* 탭 네비게이션 */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">

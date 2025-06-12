@@ -1,5 +1,5 @@
-import axios from "axios";
-import FormData from "form-data";
+const axios = require("axios");
+const FormData = require("form-data");
 
 const API_KEY = process.env.LEONARDO_API_KEY;
 const BASE_URL = "https://cloud.leonardo.ai/api/rest/v1";
@@ -71,6 +71,8 @@ async function generateImage(
       // Img2Img 시 필요한 다른 파라미터 (예: strength, guidance_scale 등) 여기에 추가
     }
 
+    console.log("[LeonardoService] Sending payload to Leonardo AI:", payload);
+
     const generationResponse = await axios.post(
       `${BASE_URL}/generations`,
       payload,
@@ -82,11 +84,15 @@ async function generateImage(
         },
       }
     );
+    console.log(
+      "[LeonardoService] Received response from Leonardo AI:",
+      generationResponse.data
+    );
     return generationResponse.data.sdGenerationJob.generationId;
   } catch (error) {
     console.error(
       "Error calling Leonardo API for image generation:",
-      error.response?.data
+      error.response?.data || error.message
     );
     throw new Error("Failed to start image generation.");
   }
@@ -187,7 +193,7 @@ async function getGeneratedVideo(generationId) {
   }
 }
 
-export {
+module.exports = {
   generateImage,
   getGeneratedImage,
   uploadImageToLeonardo,

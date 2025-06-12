@@ -20,6 +20,7 @@ import AiModelPage from "../features/settings/AiModelPage";
 import PromptsPage from "../features/settings/PromptsPage";
 import CharactersPage from "../features/settings/CharactersPage";
 import ProductionRoom from "../features/production-room/ProductionRoom";
+import ProductionRedirect from "../features/production-room/ProductionRedirect";
 
 export const router = createBrowserRouter([
   {
@@ -70,6 +71,10 @@ export const router = createBrowserRouter([
           { path: "characters", element: <CharactersPage /> },
           { path: "characters/:id", element: <div>캐릭터 상세</div> },
         ],
+      },
+      {
+        path: "production/:id",
+        element: <ProductionRedirect />,
       },
     ],
   },

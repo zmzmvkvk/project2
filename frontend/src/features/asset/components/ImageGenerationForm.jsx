@@ -1,53 +1,32 @@
-import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { generateImage } from "../api/assetApi";
-import axios from "axios";
+import { useImageGeneration } from "../hooks/useImageGeneration";
 
-const ImageGenerationForm = () => {
-  const [prompt, setPrompt] = useState("");
-  const [negativePrompt, setNegativePrompt] = useState("");
-  const [aspectRatio, setAspectRatio] = useState("1:1");
-  const [style, setStyle] = useState("realistic");
-  const [selectedPromptId, setSelectedPromptId] = useState("");
+const ImageGenerationForm = ({ projectId, onImageGenerated }) => {
+  const {
+    prompt,
+    setPrompt,
+    negativePrompt,
+    setNegativePrompt,
+    aspectRatio,
+    setAspectRatio,
+    style,
+    setStyle,
+    selectedPromptId,
+    setSelectedPromptId,
+    savedPrompts,
+    isLoadingPrompts,
+    promptsError,
+    generateMutation,
+    handlePromptSelect,
+    handleSubmit,
+  } = useImageGeneration(projectId, onImageGenerated);
 
-  // 저장된 프롬프트 목록 조회
-  const { data: savedPrompts = [] } = useQuery({
-    queryKey: ["savedPrompts"],
-    queryFn: async () => {
-      const response = await axios.get("/api/prompts");
-      return response.data;
-    },
-  });
+  if (isLoadingPrompts) {
+    return <div>프롬프트 로딩 중...</div>;
+  }
 
-  const generateMutation = useMutation({
-    mutationFn: generateImage,
-    onSuccess: () => {
-      // 성공 시 폼 초기화
-      setPrompt("");
-      setNegativePrompt("");
-      setSelectedPromptId("");
-    },
-  });
-
-  // 저장된 프롬프트 선택 시 처리
-  const handlePromptSelect = (promptId) => {
-    const selectedPrompt = savedPrompts.find((p) => p.id === promptId);
-    if (selectedPrompt) {
-      setPrompt(selectedPrompt.content);
-      setSelectedPromptId(promptId);
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    generateMutation.mutate({
-      prompt,
-      negativePrompt,
-      aspectRatio,
-      style,
-      promptId: selectedPromptId, // 선택된 프롬프트 ID도 함께 전송
-    });
-  };
+  if (promptsError) {
+    return <div>프롬프트 불러오기 오류: {promptsError.message}</div>;
+  }
 
   return (
     <form

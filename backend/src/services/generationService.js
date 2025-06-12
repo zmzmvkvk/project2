@@ -1,18 +1,26 @@
-import * as leonardoService from "./leonardoService";
-import * as openaiService from "./openaiService";
-// import * as comfyUIService from "./comfyUIService"; // 향후 ComfyUI 통합을 위해 주석 처리
+const leonardoService = require("./leonardoService");
+const openaiService = require("./openaiService");
+// const comfyUIService = require("./comfyUIService"); // 향후 ComfyUI 통합을 위해 주석 처리
 
 const AI_PROVIDER = process.env.AI_PROVIDER || "LEONARDO"; // 기본값 설정
 
 // 이미지 생성 요청
-export const generateImage = async (prompt, isPublic, modelId, initImageId) => {
+const generateImage = async ({
+  prompt,
+  projectId,
+  negativePrompt,
+  style,
+  quality,
+}) => {
   switch (AI_PROVIDER) {
     case "LEONARDO":
+      // isPublic, modelId, initImageId는 현재 assetService에서 넘어오지 않으므로 기본값 사용
+      // 실제 AI 서비스 호출 시 필요한 경우 이 값을 설정해야 합니다.
       return leonardoService.generateImage(
         prompt,
-        isPublic,
-        modelId,
-        initImageId
+        false, // isPublic (임시로 false 설정)
+        "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3", // 기본 modelId (leonardoService의 기본값)
+        null // initImageId (임시로 null 설정)
       );
     // case "COMFYUI":
     //   return comfyUIService.generateImage(prompt, isPublic, modelId, initImageId);
@@ -24,7 +32,7 @@ export const generateImage = async (prompt, isPublic, modelId, initImageId) => {
 };
 
 // 생성된 이미지 상태 확인 및 URL 가져오기
-export const getGenerationStatus = async (generationId) => {
+const getGenerationStatus = async (generationId) => {
   switch (AI_PROVIDER) {
     case "LEONARDO":
       return leonardoService.getGeneratedImage(generationId);
@@ -38,7 +46,7 @@ export const getGenerationStatus = async (generationId) => {
 };
 
 // 이미지 파일 Leonardo AI에 업로드 (현재는 Leonardo만 지원)
-export const uploadImage = async (imageData, filename) => {
+const uploadImage = async (imageData, filename) => {
   switch (AI_PROVIDER) {
     case "LEONARDO":
       return leonardoService.uploadImageToLeonardo(imageData, filename);
@@ -50,14 +58,14 @@ export const uploadImage = async (imageData, filename) => {
 };
 
 // 스토리 프롬프트 생성 요청 (현재는 OpenAI만 지원)
-export const generateStoryPrompt = async (keywords) => {
+const generateStoryPrompt = async (keywords) => {
   // 스토리 프롬프트는 현재 OpenAI만 지원
   // 추후 다른 LLM 서비스가 추가될 경우 switch-case로 확장
   return openaiService.generateStoryPrompt(keywords);
 };
 
 // 영상 생성 요청
-export const generateVideoFromImage = async (
+const generateVideoFromImage = async (
   imageId,
   prompt,
   isPublic,
@@ -85,7 +93,7 @@ export const generateVideoFromImage = async (
 };
 
 // 생성된 영상 상태 확인 및 URL 가져오기
-export const getGeneratedVideoStatus = async (generationId) => {
+const getGeneratedVideoStatus = async (generationId) => {
   switch (AI_PROVIDER) {
     case "LEONARDO":
       return leonardoService.getGeneratedVideo(generationId);
@@ -96,4 +104,13 @@ export const getGeneratedVideoStatus = async (generationId) => {
         `Unsupported AI_PROVIDER for video status: ${AI_PROVIDER}`
       );
   }
+};
+
+module.exports = {
+  generateImage,
+  getGenerationStatus,
+  uploadImage,
+  generateStoryPrompt,
+  generateVideoFromImage,
+  getGeneratedVideoStatus,
 };

@@ -4,10 +4,30 @@ import TemplateCard from "./components/TemplateCard";
 
 const categories = [
   // 이제 이 카테고리들이 템플릿 카드 자체가 됩니다.
-  { value: "dance", label: "AI 댄스/모션 챌린지" },
-  { value: "story", label: "AI 스토리 애니메이션" },
-  { value: "beforeafter", label: "AI 변신 (Before/After)" },
-  { value: "comedy", label: "AI 코미디/상황극" },
+  {
+    value: "dance",
+    label: "AI 댄스/모션 챌린지",
+    previewUrl: "https://www.w3schools.com/html/mov_bbb.mp4", // 임시 비디오 URL
+    previewType: "video",
+  },
+  {
+    value: "story",
+    label: "AI 스토리 애니메이션",
+    previewUrl: "https://www.w3schools.com/tags/movie.gif", // 임시 GIF URL
+    previewType: "gif",
+  },
+  {
+    value: "beforeafter",
+    label: "AI 변신 (Before/After)",
+    previewUrl: "https://i.imgur.com/example_image.png", // 임시 이미지 URL
+    previewType: "image",
+  },
+  {
+    value: "comedy",
+    label: "AI 코미디/상황극",
+    previewUrl: "https://www.w3schools.com/html/mov_bbb.mp4", // 임시 비디오 URL
+    previewType: "video",
+  },
 ];
 
 const TemplateListPage = () => {

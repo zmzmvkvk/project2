@@ -7,6 +7,9 @@ const LoraPage = () => {
   const [trainingProgress, setTrainingProgress] = useState(0);
   const [loraModels, setLoraModels] = useState([]);
   const [activeTab, setActiveTab] = useState("train"); // 'train' or 'models'
+  const [instancePrompt, setInstancePrompt] = useState(""); // 인스턴스 프롬프트 추가
+  const [classPrompt, setClassPrompt] = useState(""); // 클래스 프롬프트 추가
+  const [numEpochs, setNumEpochs] = useState(10); // 에포크 수 (기본값 10)
 
   useEffect(() => {
     fetchLoraModels();
@@ -30,11 +33,18 @@ const LoraPage = () => {
       alert("Please select at least one image file.");
       return;
     }
+    if (!instancePrompt.trim()) {
+      alert("인스턴스 프롬프트를 입력해주세요.");
+      return;
+    }
 
     const formData = new FormData();
     selectedFiles.forEach((file) => {
       formData.append("images", file);
     });
+    formData.append("instancePrompt", instancePrompt);
+    formData.append("classPrompt", classPrompt);
+    formData.append("numEpochs", numEpochs);
 
     try {
       const response = await axios.post("/api/lora/train", formData, {
@@ -139,18 +149,92 @@ const LoraPage = () => {
             />
           </div>
 
+          {/* 선택된 이미지 미리보기 */}
           {selectedFiles.length > 0 && (
-            <div>
-              <p className="text-sm text-gray-500">
-                {selectedFiles.length}개의 이미지가 선택되었습니다.
-              </p>
+            <div className="mt-2 grid grid-cols-4 gap-2">
+              {selectedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="relative w-24 h-24 rounded-md overflow-hidden shadow-sm"
+                >
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Selected ${index}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() =>
+                      setSelectedFiles(
+                        selectedFiles.filter((_, i) => i !== index)
+                      )
+                    }
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs leading-none opacity-80 hover:opacity-100"
+                  >
+                    X
+                  </button>
+                </div>
+              ))}
             </div>
           )}
+
+          <div>
+            <label
+              htmlFor="instancePrompt"
+              className="block text-sm font-medium text-gray-700"
+            >
+              인스턴스 프롬프트
+            </label>
+            <input
+              type="text"
+              id="instancePrompt"
+              value={instancePrompt}
+              onChange={(e) => setInstancePrompt(e.target.value)}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="예: a photo of a sks dog"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="classPrompt"
+              className="block text-sm font-medium text-gray-700"
+            >
+              클래스 프롬프트 (선택 사항)
+            </label>
+            <input
+              type="text"
+              id="classPrompt"
+              value={classPrompt}
+              onChange={(e) => setClassPrompt(e.target.value)}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="예: a photo of a dog"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="numEpochs"
+              className="block text-sm font-medium text-gray-700"
+            >
+              에포크 수
+            </label>
+            <input
+              type="number"
+              id="numEpochs"
+              value={numEpochs}
+              onChange={(e) => setNumEpochs(Number(e.target.value))}
+              min="1"
+              step="1"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
 
           <button
             onClick={startTraining}
             disabled={
-              selectedFiles.length === 0 || trainingStatus === "PENDING"
+              selectedFiles.length === 0 ||
+              trainingStatus === "PENDING" ||
+              !instancePrompt.trim()
             }
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
           >

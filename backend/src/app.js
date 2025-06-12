@@ -7,6 +7,8 @@ const projectRoutes = require("./api/projectRoutes");
 const templateRoutes = require("./api/templateRoutes");
 const settingsRoutes = require("./api/settingsRoutes");
 const loraRoutes = require("./api/loraRoutes");
+const assetRoutes = require("./api/assetRoutes");
+const promptRoutes = require("./api/promptRoutes");
 
 // 환경 변수 설정
 const PORT = process.env.PORT || 3000;
@@ -24,6 +26,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/lora", loraRoutes);
+app.use("/api/assets", assetRoutes);
+app.use("/api/prompts", promptRoutes);
 
 // 기본 라우트
 app.get("/", (req, res) => {

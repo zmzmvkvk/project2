@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+const OpenAI = require("openai");
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -31,4 +31,4 @@ async function generateStoryPrompt(keywords) {
   }
 }
 
-export { generateStoryPrompt };
+module.exports = { generateStoryPrompt };

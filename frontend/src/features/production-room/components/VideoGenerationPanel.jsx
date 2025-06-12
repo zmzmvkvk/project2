@@ -1,95 +1,30 @@
-import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import React from "react";
+import { useVideoGeneration } from "../hooks/useVideoGeneration";
 
 const VideoGenerationPanel = ({ images, saveGeneratedContentToProject }) => {
-  const [videoImageId, setVideoImageId] = useState("");
-  const [videoPrompt, setVideoPrompt] = useState("");
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
-  const [videoError, setVideoError] = useState(null);
-  const videoPollingIntervalRef = useRef(null);
-
-  // 컴포넌트 언마운트 시 정리
-  useEffect(() => {
-    return () => {
-      if (videoPollingIntervalRef.current) {
-        clearInterval(videoPollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // 영상 생성 폴링
-  const startVideoPolling = (generationId) => {
-    if (videoPollingIntervalRef.current) {
-      clearInterval(videoPollingIntervalRef.current);
-    }
-
-    videoPollingIntervalRef.current = setInterval(async () => {
-      try {
-        const statusResponse = await axios.get(
-          `/api/generate/video-status/${generationId}`
-        );
-
-        if (
-          statusResponse.data.status === "COMPLETE" &&
-          statusResponse.data.videoUrl
-        ) {
-          const videoUrl = statusResponse.data.videoUrl;
-          setIsVideoLoading(false);
-          clearInterval(videoPollingIntervalRef.current);
-          videoPollingIntervalRef.current = null;
-          saveGeneratedContentToProject(videoUrl);
-        } else if (statusResponse.data.status === "PENDING") {
-          // setGeneratedContent(`영상 생성 중... (ID: ${generationId})`);
-        } else {
-          setVideoError("영상 생성 상태를 확인할 수 없습니다.");
-          setIsVideoLoading(false);
-          clearInterval(videoPollingIntervalRef.current);
-          videoPollingIntervalRef.current = null;
-        }
-      } catch (pollErr) {
-        console.error("영상 폴링 중 오류 발생:", pollErr);
-        setVideoError(
-          "영상 상태 확인 중 오류 발생: " +
-            (pollErr.response?.data?.message || pollErr.message)
-        );
-        setIsVideoLoading(false);
-        clearInterval(videoPollingIntervalRef.current);
-        videoPollingIntervalRef.current = null;
-      }
-    }, 3000);
-  };
-
-  // 영상 생성
-  const handleGenerateVideo = async () => {
-    if (!videoImageId) {
-      alert("영상을 생성할 이미지 ID를 입력해주세요.");
-      return;
-    }
-
-    setIsVideoLoading(true);
-    setVideoError(null);
-
-    try {
-      const response = await axios.post("/api/generate/video", {
-        imageId: videoImageId,
-        prompt: videoPrompt,
-      });
-
-      if (response.data.generationId) {
-        startVideoPolling(response.data.generationId);
-      } else {
-        setVideoError("영상 생성 요청 실패: generationId를 받지 못했습니다.");
-        setIsVideoLoading(false);
-      }
-    } catch (err) {
-      console.error("AI 영상 생성 요청 오류:", err);
-      setVideoError(
-        "AI 영상 생성 요청 중 오류가 발생했습니다: " +
-          (err.response?.data?.message || err.message)
-      );
-      setIsVideoLoading(false);
-    }
-  };
+  const {
+    videoImageId,
+    setVideoImageId,
+    videoPrompt,
+    setVideoPrompt,
+    isVideoLoading,
+    videoError,
+    transitionType,
+    setTransitionType,
+    transitionDuration,
+    setTransitionDuration,
+    textOverlayContent,
+    setTextOverlayContent,
+    textOverlayPosition,
+    setTextOverlayPosition,
+    enableSubtitles,
+    setEnableSubtitles,
+    subtitleLanguage,
+    setSubtitleLanguage,
+    backgroundMusicUrl,
+    setBackgroundMusicUrl,
+    handleGenerateVideo,
+  } = useVideoGeneration(images, saveGeneratedContentToProject);
 
   return (
     <div className="bg-gray-50 p-6 rounded-lg shadow-inner">
@@ -150,6 +85,143 @@ const VideoGenerationPanel = ({ images, saveGeneratedContentToProject }) => {
             placeholder="생성될 영상에 대한 추가 설명 (예: 강아지가 춤을 추는 발랄한 영상)"
           ></textarea>
         </div>
+
+        {/* 전환 효과 선택 */}
+        <div>
+          <label
+            htmlFor="transitionType"
+            className="block text-sm font-medium text-gray-700"
+          >
+            전환 효과
+          </label>
+          <select
+            id="transitionType"
+            value={transitionType}
+            onChange={(e) => setTransitionType(e.target.value)}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="fade">페이드</option>
+            <option value="dissolve">디졸브</option>
+            <option value="slide">슬라이드</option>
+            {/* 추가 전환 효과 옵션 */}
+          </select>
+        </div>
+
+        {/* 전환 효과 지속 시간 */}
+        <div>
+          <label
+            htmlFor="transitionDuration"
+            className="block text-sm font-medium text-gray-700"
+          >
+            전환 효과 지속 시간 (초)
+          </label>
+          <input
+            type="number"
+            id="transitionDuration"
+            value={transitionDuration}
+            onChange={(e) => setTransitionDuration(Number(e.target.value))}
+            min="0.1"
+            step="0.1"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          />
+        </div>
+
+        {/* 텍스트 오버레이 내용 */}
+        <div>
+          <label
+            htmlFor="textOverlayContent"
+            className="block text-sm font-medium text-gray-700"
+          >
+            텍스트 오버레이 내용 (선택 사항)
+          </label>
+          <textarea
+            id="textOverlayContent"
+            value={textOverlayContent}
+            onChange={(e) => setTextOverlayContent(e.target.value)}
+            rows={2}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="영상에 추가할 텍스트를 입력하세요."
+          ></textarea>
+        </div>
+
+        {/* 텍스트 오버레이 위치 */}
+        <div>
+          <label
+            htmlFor="textOverlayPosition"
+            className="block text-sm font-medium text-gray-700"
+          >
+            텍스트 오버레이 위치
+          </label>
+          <select
+            id="textOverlayPosition"
+            value={textOverlayPosition}
+            onChange={(e) => setTextOverlayPosition(e.target.value)}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="top">상단</option>
+            <option value="bottom">하단</option>
+            <option value="center">중앙</option>
+            {/* 추가 위치 옵션 */}
+          </select>
+        </div>
+
+        {/* 자막 생성 옵션 */}
+        <div className="flex items-center">
+          <input
+            id="enableSubtitles"
+            type="checkbox"
+            checked={enableSubtitles}
+            onChange={(e) => setEnableSubtitles(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label
+            htmlFor="enableSubtitles"
+            className="ml-2 block text-sm font-medium text-gray-700"
+          >
+            자막 생성 활성화
+          </label>
+        </div>
+
+        {/* 자막 언어 선택 */}
+        {enableSubtitles && (
+          <div>
+            <label
+              htmlFor="subtitleLanguage"
+              className="block text-sm font-medium text-gray-700"
+            >
+              자막 언어
+            </label>
+            <select
+              id="subtitleLanguage"
+              value={subtitleLanguage}
+              onChange={(e) => setSubtitleLanguage(e.target.value)}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="ko-KR">한국어</option>
+              <option value="en-US">영어</option>
+              {/* 추가 언어 옵션 */}
+            </select>
+          </div>
+        )}
+
+        {/* 배경 음악 URL */}
+        <div>
+          <label
+            htmlFor="backgroundMusicUrl"
+            className="block text-sm font-medium text-gray-700"
+          >
+            배경 음악 URL (선택 사항)
+          </label>
+          <input
+            type="text"
+            id="backgroundMusicUrl"
+            value={backgroundMusicUrl}
+            onChange={(e) => setBackgroundMusicUrl(e.target.value)}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="배경 음악 파일의 URL을 입력하세요."
+          />
+        </div>
+
         <button
           onClick={handleGenerateVideo}
           disabled={isVideoLoading || !videoImageId}
